@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyFlow — Agenda de estudos</title>
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+<body>
+    <header class="cabecalho">
+        <a href="{{ url_for('index') }}" class="marca">
+            <span class="icone-marca">S</span>
+            Study<span>Flow</span>
+        </a>
+
+        <span class="data-atual">{{ hoje | data_br }}</span>
+    </header>
+
+    <main class="container">
+        <section class="apresentacao">
+            <div>
+                <span class="etiqueta">SEU ESPAÇO DE ORGANIZAÇÃO</span>
+                <h1>Um passo de cada vez.<br>Um objetivo mais perto.</h1>
+                <p>
+                    Organize suas matérias, acompanhe os prazos e
+                    transforme tarefas em conquistas.
+                </p>
+            </div>
+
+            <a href="#nova-tarefa" class="botao botao-principal">
+                + Nova tarefa
+            </a>
+        </section>
+
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
+            {% for categoria, mensagem in mensagens %}
+                <div class="aviso {{ categoria }}" role="status">
+                    {{ mensagem }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <section class="estatisticas" aria-label="Resumo das tarefas">
+            <article class="estatistica">
+                <span>Total de tarefas</span>
+                <strong>{{ total }}</strong>
+                <small>Tudo em um só lugar</small>
+            </article>
+
+            <article class="estatistica">
+                <span>Pendentes</span>
+                <strong class="roxo">{{ pendentes }}</strong>
+                <small>Próximos passos</small>
+            </article>
+
+            <article class="estatistica">
+                <span>Concluídas</span>
+                <strong class="verde">{{ concluidas }}</strong>
+                <small>Seu esforço conta</small>
+            </article>
+
+            <article class="estatistica">
+                <span>Atrasadas</span>
+                <strong class="vermelho">{{ atrasadas }}</strong>
+                <small>Precisam de atenção</small>
+            </article>
+        </section>
+
+        <section class="progresso">
+            <div class="progresso-texto">
+                <div>
+                    <h2>Seu progresso</h2>
+                    <p>{{ concluidas }} de {{ total }} tarefas concluídas</p>
+                </div>
+                <strong>{{ progresso }}%</strong>
+            </div>
+
+            <progress
+                value="{{ progresso }}"
+                max="100"
+                aria-label="Porcentagem de tarefas concluídas"
+            >{{ progresso }}%</progress>
+        </section>
+
+        <div class="layout">
+            <section class="painel cadastro" id="nova-tarefa">
+                <div class="titulo-secao">
+                    <span class="icone-secao">+</span>
+                    <div>
+                        <h2>Nova tarefa</h2>
+                        <p>Planeje sua próxima conquista.</p>
+                    </div>
+                </div>
+
+                <form
+                    action="{{ url_for('adicionar') }}"
+                    method="POST"
+                    class="formulario"
+                >
+                    <div class="campo">
+                        <label for="titulo">O que você precisa fazer?</label>
+                        <input
+                            type="text"
+                            id="titulo"
+                            name="titulo"
+                            placeholder="Ex.: Revisar sistemas lineares"
+                            maxlength="120"
+                            required
+                        >
+                    </div>
+
+                    <div class="campo">
+                        <label for="materia">Matéria</label>
+                        <input
+                            type="text"
+                            id="materia"
+                            name="materia"
+                            list="lista-materias"
+                            placeholder="Ex.: Matemática"
+                            maxlength="60"
+                            required
+                        >
+
+                        <datalist id="lista-materias">
+                            {% for item in materias %}
+                                <option value="{{ item.materia }}"></option>
+                            {% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="campos-duplos">
+                        <div class="campo">
+                            <label for="prazo">Prazo</label>
+                            <input
+                                type="date"
+                                id="prazo"
+                                name="prazo"
+                                value="{{ hoje }}"
+                                required
+                            >
+                        </div>
+
+                        <div class="campo">
+                            <label for="prioridade">Prioridade</label>
+                            <select id="prioridade" name="prioridade">
+                                <option value="Baixa">Baixa</option>
+                                <option value="Média" selected>Média</option>
+                                <option value="Alta">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="campo">
+                        <label for="descricao">Anotações opcionais</label>
+                        <textarea
+                            id="descricao"
+                            name="descricao"
+                            rows="4"
+                            maxlength="1000"
+                            placeholder="Páginas, exercícios ou detalhes importantes..."
+                        ></textarea>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="botao botao-principal largura-total"
+                    >
+                        Adicionar tarefa
+                    </button>
+                </form>
+
+                <div class="dica">
+                    <strong>Uma dica para começar</strong>
+                    <p>
+                        Divida atividades grandes em tarefas menores.
+                        Fica mais fácil começar e acompanhar seu avanço.
+                    </p>
+                </div>
+            </section>
+
+            <section class="painel lista">
+                <div class="titulo-lista">
+                    <div>
+                        <h2>Minhas tarefas</h2>
+                        <p>Seu planejamento, do seu jeito.</p>
+                    </div>
+
+                    <span class="contador">{{ tarefas | length }}</span>
+                </div>
+
+                <form
+                    method="GET"
+                    action="{{ url_for('index') }}"
+                    class="busca"
+                >
+                    <input
+                        type="search"
+                        name="busca"
+                        placeholder="Buscar tarefa ou matéria..."
+                        value="{{ busca }}"
+                        aria-label="Buscar tarefa ou matéria"
+                    >
+                    <input type="hidden" name="filtro" value="{{ filtro }}">
+                    <button type="submit" class="botao botao-suave">
+                        Buscar
+                    </button>
+                </form>
+
+                <nav class="filtros" aria-label="Filtrar tarefas">
+                    <a
+                        href="{{ url_for('index', filtro='todas', busca=busca) }}"
+                        class="{{ 'ativo' if filtro == 'todas' else '' }}"
+                    >Todas</a>
+
+                    <a
+                        href="{{ url_for('index', filtro='pendentes', busca=busca) }}"
+                        class="{{ 'ativo' if filtro == 'pendentes' else '' }}"
+                    >Pendentes</a>
+
+                    <a
+                        href="{{ url_for('index', filtro='concluidas', busca=busca) }}"
+                        class="{{ 'ativo' if filtro == 'concluidas' else '' }}"
+                    >Concluídas</a>
+
+                    <a
+                        href="{{ url_for('index', filtro='atrasadas', busca=busca) }}"
+                        class="{{ 'ativo' if filtro == 'atrasadas' else '' }}"
+                    >Atrasadas</a>
+                </nav>
+
+                <div class="tarefas">
+                    {% for tarefa in tarefas %}
+                        <article class="tarefa {{ 'finalizada' if tarefa.concluida else '' }}">
+                            <div class="topo-tarefa">
+                                <span class="materia">
+                                    {{ tarefa.materia }}
+                                </span>
+
+                                <span class="prioridade
+                                    {% if tarefa.prioridade == 'Alta' %}
+                                        alta
+                                    {% elif tarefa.prioridade == 'Média' %}
+                                        media
+                                    {% else %}
+                                        baixa
+                                    {% endif %}
+                                ">
+                                    {{ tarefa.prioridade }}
+                                </span>
+                            </div>
+
+                            <h3>{{ tarefa.titulo }}</h3>
+
+                            {% if tarefa.descricao %}
+                                <p class="descricao">{{ tarefa.descricao }}</p>
+                            {% endif %}
+
+                            <div class="informacoes-tarefa">
+                                <span class="prazo">
+                                    Prazo: {{ tarefa.prazo | data_br }}
+                                </span>
+
+                                {% if tarefa.concluida %}
+                                    <span class="status concluido">
+                                        Concluída
+                                    </span>
+                                {% elif tarefa.prazo < hoje %}
+                                    <span class="status atrasado">
+                                        Atrasada
+                                    </span>
+                                {% elif tarefa.prazo == hoje %}
+                                    <span class="status hoje">
+                                        Para hoje
+                                    </span>
+                                {% else %}
+                                    <span class="status pendente">
+                                        Pendente
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="acoes">
+                                <form
+                                    action="{{ url_for('alternar', tarefa_id=tarefa.id) }}"
+                                    method="POST"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="botao {{ 'botao-suave' if tarefa.concluida else 'botao-concluir' }}"
+                                    >
+                                        {% if tarefa.concluida %}
+                                            Reabrir tarefa
+                                        {% else %}
+                                            ✓ Concluir
+                                        {% endif %}
+                                    </button>
+                                </form>
+
+                                <form
+                                    action="{{ url_for('excluir', tarefa_id=tarefa.id) }}"
+                                    method="POST"
+                                    class="form-excluir"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="botao botao-excluir"
+                                        aria-label="Excluir tarefa: {{ tarefa.titulo }}"
+                                    >
+                                        Excluir
+                                    </button>
+                                </form>
+                            </div>
+                        </article>
+                    {% else %}
+                        <div class="estado-vazio">
+                            <span class="icone-vazio">✓</span>
+                            <h3>Nenhuma tarefa por aqui</h3>
+                            <p>
+                                Cadastre uma atividade ou ajuste os
+                                filtros para encontrar suas tarefas.
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            StudyFlow · Organize seus estudos, respeite seu ritmo.
+        </footer>
+    </main>
+
+    <script>
+        document.querySelectorAll(".form-excluir").forEach(form => {
+            form.addEventListener("submit", event => {
+                if (!confirm("Deseja excluir esta tarefa?")) {
+                    event.preventDefault();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
